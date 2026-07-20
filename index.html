@@ -32,7 +32,7 @@
   .sb b{color:var(--text)}
   .sb button{padding:6px 12px;font-size:13px}
   main{max-width:1150px;margin:0 auto;padding:24px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:16px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px}
   .card h2{margin:0;font-size:17px}
   .card .sub{color:var(--muted);font-size:13px;margin-top:-8px}
@@ -113,6 +113,16 @@
   .loginwrap{align-items:center}
   .loginwrap .modal{max-width:380px}
   @media (max-width:560px){form{grid-template-columns:1fr}}
+  @media (max-width:600px){
+    html,body{overflow-x:hidden;max-width:100%}
+    header{padding:14px 14px}
+    header h1{font-size:18px}
+    main{padding:14px}
+    .grid{grid-template-columns:1fr}
+    .card{padding:14px}
+    .modal{padding:18px}
+    .addrow .life{flex:1 1 90px;width:auto}
+  }
   @media print{ header .actions,.sb,.card-actions{display:none} body{background:#fff;color:#000} .card{break-inside:avoid;border-color:#ccc} .spec{background:#f3f3f3} }
 </style>
 </head>
