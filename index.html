@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oil Tracker</title>
+<style>
+  :root{
+    --bg:#0f1419; --panel:#1a2330; --panel2:#222d3d; --line:#2d3a4d;
+    --text:#e8edf3; --muted:#8a99ad; --accent:#f0a020; --accent2:#3b82f6;
+    --good:#34d399; --warn:#fbbf24; --bad:#f87171;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.5}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:18px 24px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header h1{margin:0;font-size:20px;display:flex;align-items:center;gap:10px}
+  .logo{width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);
+    color:var(--text);padding:8px 14px;border-radius:8px;transition:.15s}
+  button:hover{border-color:var(--accent2)}
+  button.primary{background:var(--accent);color:#1a1206;border-color:var(--accent);font-weight:600}
+  button.primary:hover{filter:brightness(1.08)}
+  button.ghost{background:transparent}
+  button.danger:hover{border-color:var(--bad);color:var(--bad)}
+  select{font:inherit;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:8px 10px;border-radius:8px}
+  .sb{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:10px 24px;font-size:13.5px;border-bottom:1px solid var(--line)}
+  .sb.ok{background:rgba(52,211,153,.10);color:var(--good)}
+  .sb.warn{background:rgba(251,191,36,.12);color:var(--warn)}
+  .sb b{color:var(--text)}
+  .sb button{padding:6px 12px;font-size:13px}
+  main{max-width:1150px;margin:0 auto;padding:24px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .card h2{margin:0;font-size:17px}
+  .card .sub{color:var(--muted);font-size:13px;margin-top:-8px}
+  .specs{display:grid;grid-template-columns:1fr;gap:8px}
+  .spec{display:flex;justify-content:space-between;gap:12px;padding:9px 11px;background:var(--panel2);border-radius:8px;font-size:14px}
+  .spec.key{border-left:3px solid var(--accent)}
+  .spec .lbl{color:var(--muted);display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .spec .val{font-weight:600;text-align:right}
+  .optblock{display:flex;flex-direction:column;gap:4px}
+  .opthd{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent);font-weight:600}
+  .optitem{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:6px 10px;background:var(--panel2);border-radius:7px}
+  .optitem.muted{color:var(--muted);background:transparent;padding:2px 2px}
+  .optitem .lf2{color:var(--muted);white-space:nowrap}
+  .meta{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;margin-top:2px}
+  .meta .row{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+  .badges{display:flex;gap:6px;flex-wrap:wrap}
+  .badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+  .badge.ok{background:rgba(52,211,153,.15);color:var(--good)}
+  .badge.blue{background:rgba(59,130,246,.15);color:var(--accent2)}
+  .card-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .card-actions button{flex:1;padding:7px;font-size:13px;min-width:64px}
+  .empty{text-align:center;padding:70px 20px;color:var(--muted)}
+  .empty .big{font-size:46px;margin-bottom:10px}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-start;justify-content:center;padding:30px 16px;overflow:auto;z-index:50}
+  .overlay.show{display:flex}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:100%;max-width:600px;padding:24px}
+  .modal h2{margin:0 0 4px}
+  .modal .hint{color:var(--muted);font-size:13px;margin:0 0 18px}
+  form{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field.full{grid-column:1 / -1}
+  .field label{font-size:13px;color:var(--muted)}
+  .field label .star{color:var(--accent)}
+  input,textarea{font:inherit;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:9px 11px;border-radius:8px;width:100%}
+  textarea{resize:vertical;line-height:1.5}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent2)}
+  .section-label{grid-column:1/-1;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);margin-top:6px;border-top:1px solid var(--line);padding-top:12px}
+  .modal-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:10px;margin-top:8px}
+  .count{color:var(--muted);font-size:14px}
+  .hdrstat{display:inline-flex;align-items:center}
+  .hdrstat .stat{font-size:13px;color:var(--muted);padding:0 8px}
+  .hdrstat button.ok{color:var(--good);border-color:rgba(52,211,153,.45)}
+  .chips{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;min-height:8px}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);padding:5px 8px 5px 11px;border-radius:8px;font-size:13px}
+  .chip .lf{color:var(--muted)}
+  .chip button{padding:0 6px;border:none;background:transparent;color:var(--muted);font-size:16px;line-height:1}
+  .chip button:hover{color:var(--bad)}
+  #commonToolChips{margin-bottom:12px}
+  .chip.drag{cursor:grab}
+  .chip.drag:active{cursor:grabbing}
+  .chip .grip{color:var(--muted);font-size:13px;letter-spacing:-1px;user-select:none}
+  .chip.dragging{opacity:.4}
+  .chip.dragover{border-color:var(--accent2);background:rgba(59,130,246,.16)}
+  .addrow{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .addrow select{flex:2;min-width:160px}
+  .addrow .grow{flex:2;min-width:140px;width:auto}
+  .addrow .life{flex:0 0 120px;width:120px}
+  .addrow button{flex:0 0 auto}
+  .muted{color:var(--muted);font-size:13px}
+  .libitem{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+  .libitem .nm{flex:4;min-width:240px}
+  .libitem .life{flex:0 0 90px;width:90px}
+  .libitem .suffix{color:var(--muted);font-size:12px}
+  .invitem{display:flex;gap:10px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+  .invitem .nm{flex:2;min-width:160px}
+  span.invnm{flex:2;min-width:160px;font-size:14px}
+  .invitem .qty{flex:0 0 76px;width:76px;text-align:center}
+  .invitem .suffix{color:var(--muted);font-size:12px}
+  .invitem .tag{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;white-space:nowrap}
+  .tag.out{background:rgba(248,113,113,.15);color:var(--bad)}
+  .tag.low{background:rgba(251,191,36,.15);color:var(--warn)}
+  .tag.ok{background:rgba(52,211,153,.15);color:var(--good)}
+  .tag{background:var(--panel2);color:var(--muted)}
+  .logitem{grid-column:1/-1;display:flex;justify-content:space-between;gap:12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px}
+  .logitem .li-main{display:flex;flex-direction:column;gap:2px}
+  .logitem .li-when{font-weight:600;font-size:14px}
+  .logitem button{padding:4px 8px;font-size:12px;align-self:center}
+  .loginwrap{align-items:center}
+  .loginwrap .modal{max-width:380px}
+  @media (max-width:560px){form{grid-template-columns:1fr}}
+  @media print{ header .actions,.sb,.card-actions{display:none} body{background:#fff;color:#000} .card{break-inside:avoid;border-color:#ccc} .spec{background:#f3f3f3} }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="logo">🛢️</span> Oil Tracker</h1>
+  <div class="actions">
+    <span class="count" id="count"></span>
+    <button class="primary" onclick="openForm()">+ Add Car</button>
+    <button class="ghost" onclick="openLib()">Oils &amp; Filters</button>
+    <button class="ghost" onclick="openInv()">Inventory</button>
+    <button class="ghost" onclick="exportData()">Export</button>
+    <button class="ghost" onclick="document.getElementById('import').click()">Import</button>
+    <button class="ghost" onclick="window.print()">Print</button>
+    <span id="storagebar" class="hdrstat"></span>
+    <input type="file" id="import" accept="application/json" style="display:none" onchange="importData(event)">
+  </div>
+</header>
+
+<main>
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty" style="display:none">
+    <div class="big">🚗</div>
+    <p>No cars yet. Click <b>“+ Add Car”</b> to track your first vehicle’s oil and filter.</p>
+  </div>
+</main>
+
+<!-- LOGIN -->
+<div class="overlay loginwrap" id="loginOverlay">
+  <div class="modal">
+    <h2><span class="logo" style="display:inline-flex;vertical-align:middle;margin-right:6px">🛢️</span> Oil Tracker</h2>
+    <p class="hint">Enter your password to open your tracker.</p>
+    <form onsubmit="doLogin(event)">
+      <div class="field full">
+        <label>Password</label>
+        <input id="loginPw" type="password" autocomplete="current-password">
+      </div>
+      <div class="field full"><div id="loginErr" style="color:var(--bad);font-size:13px;min-height:16px"></div></div>
+      <div class="modal-actions"><button id="loginBtn" type="submit" class="primary">Sign in</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- CAR EDITOR -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modalTitle">Add Car</h2>
+    <p class="hint">Add as many compatible oils and filters as you like — each one carries its own expected mileage. You can also pick oils/filters you’ve already added to another car. Fields marked <span style="color:var(--accent)">★</span> matter most for an oil change.</p>
+    <form id="form" onsubmit="saveCar(event)">
+      <div class="section-label">Vehicle</div>
+      <div class="field"><label>Year</label><input id="year" placeholder="2018"></div>
+      <div class="field"><label>Make</label><input id="make" placeholder="Toyota"></div>
+      <div class="field"><label>Model</label><input id="model" placeholder="Tacoma"></div>
+      <div class="field"><label>Nickname / Plate</label><input id="nickname" placeholder="The Truck"></div>
+      <div class="field full"><label>Oil capacity <span class="star">★</span></label><input id="oilCap" placeholder="6.1 qt"></div>
+
+      <div class="section-label">Compatible Oils <span class="star">★</span></div>
+      <div class="chips" id="oilChips"></div>
+      <div class="addrow" id="oilLibRow">
+        <select id="oilLib"></select>
+        <button type="button" onclick="addExistingOil()">Add selected</button>
+      </div>
+      <div class="addrow">
+        <input class="grow" id="newOil" placeholder="new oil, e.g. 5W-30 Mobil 1 Full Synthetic">
+        <input class="life" id="newOilLife" placeholder="miles">
+        <input class="life" id="newOilMo" placeholder="months">
+        <button type="button" onclick="addNewOil()">Add new</button>
+      </div>
+
+      <div class="section-label">Compatible Filters <span class="star">★</span></div>
+      <div class="chips" id="filterChips"></div>
+      <div class="addrow" id="filterLibRow">
+        <select id="filterLib"></select>
+        <button type="button" onclick="addExistingFilter()">Add selected</button>
+      </div>
+      <div class="addrow">
+        <input class="grow" id="newFilter" placeholder="new filter, e.g. Mobil 1 M1-110A">
+        <input class="life" id="newFilterLife" placeholder="miles">
+        <input class="life" id="newFilterMo" placeholder="months">
+        <button type="button" onclick="addNewFilter()">Add new</button>
+      </div>
+
+      <div class="section-label">Crush Washer</div>
+      <div class="chips" id="washerChips"></div>
+      <div class="addrow" id="washerLibRow">
+        <select id="washerLib"></select>
+        <button type="button" onclick="addExistingWasher()">Add selected</button>
+      </div>
+      <div class="addrow">
+        <input class="grow" id="newWasher" placeholder="new crush washer, e.g. Toyota 90430-12031 12mm aluminum">
+        <button type="button" onclick="addNewWasher()">Add new</button>
+      </div>
+
+      <div class="section-label">Tools Needed — specific to this vehicle</div>
+      <div class="chips" id="toolChips"></div>
+      <div class="addrow">
+        <input class="grow" id="newTool" placeholder="e.g. 14mm socket, oil filter wrench, 12mm for skid plate">
+        <button type="button" onclick="addNewTool()">Add tool</button>
+      </div>
+
+      <div class="section-label">Notes — anything special to remember</div>
+      <div class="field full"><textarea id="carNotes" rows="3" placeholder="e.g. remove skid plate (12mm bolts), filter access is tight, needs new crush washer"></textarea></div>
+
+      <div class="modal-actions">
+        <button type="button" class="ghost" onclick="closeForm()">Cancel</button>
+        <button type="submit" class="primary">Save Car</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- LIBRARY -->
+<div class="overlay" id="libOverlay">
+  <div class="modal" style="max-width:760px">
+    <h2>Oils &amp; Filters Library</h2>
+    <p class="hint">Set the expected life for each oil and filter — by mileage, by time, or both. Whichever comes first is shown as the due point on each car. Editing one updates every car that uses it.</p>
+    <div class="section-label" style="border-top:none;padding-top:0">Common Tools — included on every car’s form</div>
+    <div class="chips" id="commonToolChips"></div>
+    <div class="addrow">
+      <input class="grow" id="newCommonTool" placeholder="e.g. ratchet, oil drain pan, funnel, gloves">
+      <button type="button" onclick="addCommonTool()">Add tool</button>
+    </div>
+    <div class="section-label">Oils</div>
+    <div id="libOils"></div>
+    <div class="addrow" style="margin-top:8px">
+      <input class="grow" id="libNewOil" placeholder="Oil name">
+      <input class="life" id="libNewOilLife" placeholder="miles">
+      <input class="life" id="libNewOilMo" placeholder="months">
+      <button type="button" onclick="libAddOil()">Add oil</button>
+    </div>
+    <div class="section-label">Filters</div>
+    <div id="libFilters"></div>
+    <div class="addrow" style="margin-top:8px">
+      <input class="grow" id="libNewFilter" placeholder="Filter name">
+      <input class="life" id="libNewFilterLife" placeholder="miles">
+      <input class="life" id="libNewFilterMo" placeholder="months">
+      <button type="button" onclick="libAddFilter()">Add filter</button>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:18px">
+      <button class="primary" onclick="closeLib()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVENTORY -->
+<div class="overlay" id="invOverlay">
+  <div class="modal">
+    <h2>Inventory</h2>
+    <p class="hint">How many you have on hand. Type a count for each item — <span style="color:var(--bad)">Out</span> at 0, <span style="color:var(--warn)">Low</span> at 1–2, otherwise <span style="color:var(--good)">In stock</span>. Crush washers are managed here; add or remove them like oils and filters.</p>
+    <div class="section-label" style="border-top:none;padding-top:0">Oils</div>
+    <div id="invOils"></div>
+    <div class="section-label">Filters</div>
+    <div id="invFilters"></div>
+    <div class="section-label">Crush Washers</div>
+    <div id="invWashers"></div>
+    <div class="addrow" style="margin-top:8px">
+      <input class="grow" id="invNewWasher" placeholder="Crush washer name / part #">
+      <input class="life" id="invNewWasherQty" placeholder="qty">
+      <button type="button" onclick="invAddWasher()">Add washer</button>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:18px">
+      <button class="primary" onclick="closeInv()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- SERVICE LOG -->
+<div class="overlay" id="logOverlay">
+  <div class="modal">
+    <h2 id="logTitle">Service Log</h2>
+    <p class="hint">Record an oil change and pick exactly which oil, filter and crush washer you used this time. What you use is subtracted from your inventory automatically — quarts off the oil, one off the filter and washer. Deleting an entry puts it back.</p>
+    <form id="logForm" onsubmit="saveLog(event)">
+      <div class="section-label">Log an oil change</div>
+      <div class="field"><label>Date</label><input id="logDate" type="date"></div>
+      <div class="field"><label>Current mileage</label><input id="logMiles" placeholder="62,000"></div>
+      <div class="field full"><label>Oil used</label><select id="logOil"></select></div>
+      <div class="field"><label>Quarts used <span class="star">★</span></label><input id="logQts" type="number" min="0" step="0.1" placeholder="6.2"></div>
+      <div class="field full"><label>Filter used</label><select id="logFilter"></select></div>
+      <div class="field full"><label>Crush washer used</label><select id="logWasher"></select></div>
+      <div class="field full"><label>Notes</label><input id="logNotes" placeholder="optional — shop, cost, etc."></div>
+      <div class="modal-actions">
+        <button type="button" class="ghost" onclick="closeLog()">Close</button>
+        <button type="submit" class="primary">Add to log</button>
+      </div>
+      <div class="section-label">History</div>
+      <div id="logList" style="grid-column:1/-1;display:flex;flex-direction:column;gap:8px"></div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* =======================================================================
+   CONFIG — paste your Supabase values here (see SETUP-web-hosting.md)
+   ======================================================================= */
+const SUPABASE_URL      = 'https://rzeluofswaaucqshaahk.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6ZWx1b2Zzd2FhdWNxc2hhYWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MjQwMjYsImV4cCI6MjEwMDEwMDAyNn0.MWGi1qIARSVtOchppStMEGyKV0_Rk-R0H7oYxJ-6k_4';
+const LOGIN_EMAIL       = 'pat@claytonrugby.com';         // the single account you create in Supabase
+const ROW_ID            = 1;                              // one shared row holds all your data
+/* ======================================================================= */
+
+const KEY='oilTrackerData';
+const OLDKEY='oilTrackerCars';
+let db = loadLocal();
+let sb=null, session=null, saveTimer=null;
+
+/* ---------- local cache load + migration (never erases existing data) ---------- */
+function loadLocal(){
+  try{ const raw=localStorage.getItem(KEY); if(raw) return normalize(JSON.parse(raw)); }catch(e){}
+  try{ const old=JSON.parse(localStorage.getItem(OLDKEY)); if(Array.isArray(old)&&old.length){ const m=migrate(old); saveLocal(m); return m; } }catch(e){}
+  return {oils:[],filters:[],cars:[],commonTools:[],washers:[]};
+}
+function normalize(d){
+  if(Array.isArray(d)) return migrate(d);
+  d=d||{}; d.oils=d.oils||[]; d.filters=d.filters||[]; d.cars=d.cars||[]; d.commonTools=d.commonTools||[]; d.washers=d.washers||[];
+  d.oils.forEach(o=>{ if(o.life==null)o.life=''; if(o.lifeMo==null)o.lifeMo=''; if(o.qty==null)o.qty=''; });
+  d.filters.forEach(f=>{ if(f.life==null)f.life=''; if(f.lifeMo==null)f.lifeMo=''; if(f.qty==null)f.qty=''; });
+  d.washers.forEach(w=>{ if(w.qty==null)w.qty=''; });
+  d.cars.forEach(c=>{
+    c.oilIds=c.oilIds||[]; c.filterIds=c.filterIds||[]; c.log=c.log||[]; c.tools=c.tools||[]; c.washerIds=c.washerIds||[]; if(c.notes==null)c.notes='';
+    c.log.forEach(l=>{ if(l.washerId==null)l.washerId=''; if(l.qts==null)l.qts=''; });
+    if(c.interval){ c.oilIds.forEach(id=>{ const o=d.oils.find(x=>x.id===id); if(o&&!o.life) o.life=c.interval; }); }
+    if(c.filterInterval){ c.filterIds.forEach(id=>{ const f=d.filters.find(x=>x.id===id); if(f&&!f.life) f.life=c.filterInterval; }); }
+    delete c.interval; delete c.filterInterval;
+    // Promote any crush washers living in the tools list into the managed washer library.
+    if(c.tools&&c.tools.length){
+      const keep=[];
+      c.tools.forEach(t=>{
+        if(/crush\s*washer/i.test(t)){ const w=ensureWasher(d.washers,t); if(!c.washerIds.includes(w.id)) c.washerIds.push(w.id); }
+        else keep.push(t);
+      });
+      c.tools=keep;
+    }
+  });
+  return d;
+}
+function ensureWasher(list,name){
+  name=(name||'').trim(); let x=list.find(w=>w.name.toLowerCase()===name.toLowerCase());
+  if(!x){ x={id:uid(),name,qty:''}; list.push(x); }
+  return x;
+}
+function migrate(old){
+  const m={oils:[],filters:[],cars:[],commonTools:[],washers:[]};
+  old.forEach(c=>{
+    const car={id:c.id||uid(),year:c.year||'',make:c.make||'',model:c.model||'',nickname:c.nickname||'',oilCap:c.oilCap||'',oilIds:[],filterIds:[],log:[]};
+    if(c.oilType){ const o=ensure(m.oils,c.oilType,c.interval); car.oilIds.push(o.id); }
+    const fname=[c.filterBrand,c.filterPart].filter(Boolean).join(' ').trim();
+    if(fname){ const f=ensure(m.filters,fname,c.filterInterval); car.filterIds.push(f.id); }
+    if(c.lastDate||c.lastMiles){ car.log.push({id:uid(),date:c.lastDate||'',miles:c.lastMiles||'',oilId:car.oilIds[0]||'',filterId:car.filterIds[0]||'',notes:'(imported)'}); }
+    m.cars.push(car);
+  });
+  return m;
+}
+function ensure(list,name,life,lifeMo){
+  name=(name||'').trim(); let x=list.find(o=>o.name.toLowerCase()===name.toLowerCase());
+  if(!x){ x={id:uid(),name,life:(life||'').toString().trim(),lifeMo:(lifeMo||'').toString().trim()}; list.push(x); }
+  else { if(life&&!x.life)x.life=life.toString().trim(); if(lifeMo&&!x.lifeMo)x.lifeMo=lifeMo.toString().trim(); }
+  return x;
+}
+function saveLocal(d){ try{ localStorage.setItem(KEY, JSON.stringify(d||db)); }catch(e){} }
+
+/* ---------- cloud persistence (Supabase) ---------- */
+function configured(){ return SUPABASE_URL.indexOf('PASTE_')<0 && SUPABASE_ANON_KEY.indexOf('PASTE_')<0 && window.supabase; }
+function persist(){ saveLocal(db); scheduleCloud(); }
+function scheduleCloud(){
+  if(!sb||!session) return;
+  setStatus('saving');
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(pushCloud,600);
+}
+async function pushCloud(){
+  if(!sb||!session) return;
+  try{
+    const {error}=await sb.from('app_data').upsert({id:ROW_ID,data:db,updated_at:new Date().toISOString()});
+    if(error) throw error;
+    setStatus('saved');
+  }catch(e){ setStatus('offline'); }
+}
+async function loadCloud(){
+  if(!sb||!session) return;
+  setStatus('loading');
+  try{
+    const {data,error}=await sb.from('app_data').select('data').eq('id',ROW_ID).maybeSingle();
+    if(error) throw error;
+    if(data && data.data){ db=normalize(data.data); saveLocal(db); render(); setStatus('saved'); }
+    else { render(); await pushCloud(); }   // no row yet: seed it with whatever we have locally
+  }catch(e){ setStatus('offline'); render(); }
+}
+function initSupabase(){
+  if(!configured()){ setStatus('unconfigured'); render(); showLogin(false); return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sb.auth.getSession().then(({data})=>{
+    if(data && data.session){ session=data.session; showLogin(false); onAuthed(); }
+    else { showLogin(true); }
+  }).catch(()=>{ showLogin(true); });
+}
+async function onAuthed(){ await loadCloud(); }
+function showLogin(show){ document.getElementById('loginOverlay').classList.toggle('show',!!show); if(show){ setTimeout(()=>{ const el=document.getElementById('loginPw'); if(el) el.focus(); },50); } }
+async function doLogin(e){
+  e.preventDefault();
+  if(!sb){ return; }
+  const pw=document.getElementById('loginPw').value;
+  const btn=document.getElementById('loginBtn'); const err=document.getElementById('loginErr');
+  err.textContent=''; btn.disabled=true; btn.textContent='Signing in…';
+  try{
+    const {data,error}=await sb.auth.signInWithPassword({email:LOGIN_EMAIL,password:pw});
+    if(error) throw error;
+    session=data.session; document.getElementById('loginPw').value='';
+    showLogin(false); onAuthed();
+  }catch(x){ err.textContent='Wrong password — try again.'; }
+  finally{ btn.disabled=false; btn.textContent='Sign in'; }
+}
+async function logout(){ try{ if(sb) await sb.auth.signOut(); }catch(e){} session=null; showLogin(true); }
+function setStatus(state){
+  const bar=document.getElementById('storagebar');
+  if(state==='saved'){ bar.innerHTML='<button class="ghost ok" title="Synced to the cloud. Click to reload the latest from your other devices." onclick="loadCloud()">✓ Synced</button> <button class="ghost" title="Log out" onclick="logout()">Log out</button>'; }
+  else if(state==='saving'){ bar.innerHTML='<span class="stat">Saving…</span>'; }
+  else if(state==='loading'){ bar.innerHTML='<span class="stat">Loading…</span>'; }
+  else if(state==='offline'){ bar.innerHTML='<button class="primary" title="Could not reach the cloud. Your changes are saved on this device. Click to retry." onclick="loadCloud()">Offline — retry</button>'; }
+  else if(state==='unconfigured'){ bar.innerHTML='<span class="stat" title="Add your Supabase keys in the CONFIG block to turn on sync">Local only</span>'; }
+}
+
+/* ---------- helpers ---------- */
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function esc(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function num(s){ return parseInt(String(s||'').replace(/[^0-9]/g,''),10); }
+function val(id){ return document.getElementById(id).value.trim(); }
+function oilObj(id){ return db.oils.find(x=>x.id===id); }
+function filObj(id){ return db.filters.find(x=>x.id===id); }
+function washObj(id){ return db.washers.find(x=>x.id===id); }
+function qnum(q){ const m=String(q==null?'':q).replace(/[^0-9.]/g,''); if(m==='') return NaN; return parseFloat(m); }
+function stockState(q,lowAt){ lowAt=(lowAt==null)?2:lowAt; const s=String(q==null?'':q).trim(); if(s==='') return {cls:'',label:'—'}; const n=qnum(q); if(isNaN(n)) return {cls:'',label:'—'}; if(n<=0) return {cls:'out',label:'Out'}; if(n<=lowAt) return {cls:'low',label:'Low'}; return {cls:'ok',label:'In stock'}; }
+function stockPill(q,unit,lowAt){ const st=stockState(q,lowAt); if(!st.cls) return '<span class="tag">no qty</span>'; const n=qnum(q); const u=unit?(' '+unit):''; const label = n<=0 ? 'Out' : (n+u+' on hand'); return `<span class="tag ${st.cls}">${label}</span>`; }
+function oilName(id){ const o=oilObj(id); return o?o.name:''; }
+function filterName(id){ const f=filObj(id); return f?f.name:''; }
+function objIn(list,id){ return list.find(x=>x.id===id); }
+function carTitle(c){ return [c.year,c.make,c.model].filter(Boolean).join(' ') || c.nickname || 'Untitled Car'; }
+function milesFmt(m){ const n=num(m); return isNaN(n)?m:n.toLocaleString(); }
+function fmtDate(d){ if(!d) return ''; const p=d.split('-'); return p.length===3?`${p[1]}/${p[2]}/${p[0]}`:d; }
+function byRecent(a,b){ if(a.date&&b.date&&a.date!==b.date) return a.date<b.date?1:-1; return (num(b.miles)||0)-(num(a.miles)||0); }
+function latestLog(c){ const e=(c.log||[]).filter(l=>l.date||l.miles).slice().sort(byRecent); return e[0]||null; }
+function latestWith(c,field){ const e=(c.log||[]).filter(l=>l[field]&&(l.date||l.miles)).slice().sort(byRecent); return e[0]||null; }
+function moStr(m){ const n=num(m); if(isNaN(n)) return esc(m)+' mo'; return n%12===0 ? (n/12)+' yr' : n+' mo'; }
+function lifeStr(o){ const p=[]; if(o.life)p.push(milesFmt(o.life)+' mi'); if(o.lifeMo)p.push(moStr(o.lifeMo)); return p.join(' / '); }
+function addMonths(dateStr,m){ const n=num(m); if(!dateStr||isNaN(n)) return ''; const p=dateStr.split('-'); if(p.length!==3) return ''; const d=new Date(+p[0],(+p[1]-1)+n,+p[2]); if(isNaN(d.getTime())) return ''; return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear(); }
+function dueText(label,mi,date){ const p=[]; if(mi!=null&&!isNaN(mi))p.push(mi.toLocaleString()+' mi'); if(date)p.push('by '+date); return p.length?`${label}: ${p.join(' · ')}`:''; }
+function withLife(o){ if(!o) return ''; const s=lifeStr(o); return esc(o.name)+(s?` (${s})`:''); }
+function optLine(o,unit,lowAt){ if(!o) return ''; const s=lifeStr(o); return `<div class="optitem"><span>${esc(o.name)}</span><span class="lf2" style="display:inline-flex;gap:8px;align-items:center">${s?`<span>${s}</span>`:''}${stockPill(o.qty,unit,lowAt)}</span></div>`; }
+
+/* ---------- render cards ---------- */
+function render(){
+  const grid=document.getElementById('grid'), empty=document.getElementById('empty');
+  document.getElementById('count').textContent = db.cars.length ? db.cars.length+(db.cars.length===1?' car':' cars') : '';
+  if(!db.cars.length){ grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  grid.innerHTML = db.cars.map(c=>{
+    const title=carTitle(c);
+    const sub=(c.nickname && title!==c.nickname)?esc(c.nickname):'';
+    const last=latestLog(c);
+    let oilMi=NaN, oilDate='', filMi=NaN, filDate='';
+    const eo=latestWith(c,'oilId'); if(eo){ const o=oilObj(eo.oilId); if(o){ const lf=num(o.life), lm=num(eo.miles); if(!isNaN(lf)&&!isNaN(lm)) oilMi=lm+lf; oilDate=addMonths(eo.date,o.lifeMo); } }
+    const ef=latestWith(c,'filterId'); if(ef){ const f=filObj(ef.filterId); if(f){ const lf=num(f.life), lm=num(ef.miles); if(!isNaN(lf)&&!isNaN(lm)) filMi=lm+lf; filDate=addMonths(ef.date,f.lifeMo); } }
+    const oilTxt=dueText('Oil due',oilMi,oilDate), filTxt=dueText('Filter due',filMi,filDate);
+    const badges=[oilTxt?`<span class="badge ok">${oilTxt}</span>`:'',
+                  filTxt?`<span class="badge blue">${filTxt}</span>`:''].join('');
+    return `<div class="card">
+      <div>
+        <h2>${esc(title)}</h2>
+        ${sub?`<div class="sub">${sub}</div>`:''}
+      </div>
+      <div class="specs">
+        ${row('Capacity','🧴',c.oilCap,true)}
+      </div>
+      <div class="optblock">
+        <div class="opthd">Oils (${c.oilIds.length})</div>
+        ${c.oilIds.length?c.oilIds.map(id=>optLine(oilObj(id),'qt',5)).join(''):'<div class="optitem muted">— none added —</div>'}
+      </div>
+      <div class="optblock">
+        <div class="opthd">Filters (${c.filterIds.length})</div>
+        ${c.filterIds.length?c.filterIds.map(id=>optLine(filObj(id))).join(''):'<div class="optitem muted">— none added —</div>'}
+      </div>
+      ${c.washerIds&&c.washerIds.length?`<div class="optblock"><div class="opthd">Crush Washer (${c.washerIds.length})</div>${c.washerIds.map(id=>{const w=washObj(id);if(!w)return '';return `<div class="optitem"><span>⚙️ ${esc(w.name)}</span><span class="lf2">${stockPill(w.qty)}</span></div>`;}).join('')}</div>`:''}
+      ${c.tools&&c.tools.length?`<div class="optblock"><div class="opthd">Tools (${c.tools.length})</div>${c.tools.map(t=>`<div class="optitem"><span>🔧 ${esc(t)}</span></div>`).join('')}</div>`:''}
+      ${c.notes?`<div class="optblock"><div class="opthd">Notes</div><div class="optitem" style="display:block;white-space:pre-wrap">${esc(c.notes)}</div></div>`:''}
+      <div class="meta">
+        <div class="row">
+          <span>${last?('Last: '+[fmtDate(last.date),num(last.miles)?milesFmt(last.miles)+' mi':''].filter(Boolean).join(' @ ')):'No service logged'}</span>
+          <span>${(c.log||[]).length} change${(c.log||[]).length===1?'':'s'}</span>
+        </div>
+        ${badges?`<div class="badges">${badges}</div>`:''}
+        ${last&&last.oilId?`<div class="row"><span>Last oil: ${esc(oilName(last.oilId))}</span></div>`:''}
+        ${last&&last.filterId?`<div class="row"><span>Last filter: ${esc(filterName(last.filterId))}</span></div>`:''}
+      </div>
+      <div class="card-actions">
+        <button class="primary" onclick="openLog('${c.id}')">Log Change</button>
+        <button onclick="printForm('${c.id}')">Form</button>
+        <button onclick="openForm('${c.id}')">Edit</button>
+        <button onclick="dupCar('${c.id}')">Copy</button>
+        <button class="danger" onclick="delCar('${c.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function row(lbl,icon,v,key){ if(!v)v='—'; return `<div class="spec ${key?'key':''}"><span class="lbl">${icon} ${lbl}</span><span class="val">${esc(v)}</span></div>`; }
+
+/* ---------- car editor ---------- */
+let edit=null;
+function blankCar(){ return {id:uid(),year:'',make:'',model:'',nickname:'',oilCap:'',oilIds:[],filterIds:[],washerIds:[],tools:[],notes:'',log:[]}; }
+function openForm(id){
+  const car = id ? clone(db.cars.find(c=>c.id===id)) : blankCar();
+  edit={car, oils:clone(db.oils), filters:clone(db.filters), washers:clone(db.washers)};
+  if(!edit.car.tools)edit.car.tools=[];
+  if(!edit.car.washerIds)edit.car.washerIds=[];
+  document.getElementById('modalTitle').textContent = id?'Edit Car':'Add Car';
+  ['year','make','model','nickname','oilCap'].forEach(f=>document.getElementById(f).value=car[f]||'');
+  document.getElementById('carNotes').value=car.notes||'';
+  ['newOil','newOilLife','newOilMo','newFilter','newFilterLife','newFilterMo','newWasher','newTool'].forEach(f=>document.getElementById(f).value='');
+  renderOilEditor(); renderFilterEditor(); renderWasherEditor(); renderToolEditor();
+  document.getElementById('overlay').classList.add('show');
+}
+function closeForm(){ document.getElementById('overlay').classList.remove('show'); edit=null; }
+function renderOilEditor(){
+  document.getElementById('oilChips').innerHTML = edit.car.oilIds.length
+    ? edit.car.oilIds.map(id=>{ const o=objIn(edit.oils,id); const s=o?lifeStr(o):''; return `<span class="chip">${esc(o?o.name:'')}${s?` <span class="lf">${s}</span>`:''}<button type="button" onclick="rmOil('${id}')">×</button></span>`; }).join('')
+    : '<span class="muted">No oils added yet</span>';
+  const avail=edit.oils.filter(o=>!edit.car.oilIds.includes(o.id));
+  document.getElementById('oilLibRow').style.display = avail.length ? 'flex' : 'none';
+  document.getElementById('oilLib').innerHTML='<option value="">— reuse an oil from another car —</option>'+avail.map(o=>{const s=lifeStr(o);return `<option value="${o.id}">${esc(o.name)}${s?' — '+s:''}</option>`;}).join('');
+}
+function renderFilterEditor(){
+  document.getElementById('filterChips').innerHTML = edit.car.filterIds.length
+    ? edit.car.filterIds.map(id=>{ const o=objIn(edit.filters,id); const s=o?lifeStr(o):''; return `<span class="chip">${esc(o?o.name:'')}${s?` <span class="lf">${s}</span>`:''}<button type="button" onclick="rmFilter('${id}')">×</button></span>`; }).join('')
+    : '<span class="muted">No filters added yet</span>';
+  const avail=edit.filters.filter(o=>!edit.car.filterIds.includes(o.id));
+  document.getElementById('filterLibRow').style.display = avail.length ? 'flex' : 'none';
+  document.getElementById('filterLib').innerHTML='<option value="">— reuse a filter from another car —</option>'+avail.map(o=>{const s=lifeStr(o);return `<option value="${o.id}">${esc(o.name)}${s?' — '+s:''}</option>`;}).join('');
+}
+function addExistingOil(){ const s=document.getElementById('oilLib'); if(s.value){ edit.car.oilIds.push(s.value); renderOilEditor(); } }
+function addNewOil(){ const n=val('newOil'); if(!n)return; const o=ensure(edit.oils,n,val('newOilLife'),val('newOilMo')); if(!edit.car.oilIds.includes(o.id))edit.car.oilIds.push(o.id); document.getElementById('newOil').value=''; document.getElementById('newOilLife').value=''; document.getElementById('newOilMo').value=''; renderOilEditor(); }
+function rmOil(id){ edit.car.oilIds=edit.car.oilIds.filter(x=>x!==id); renderOilEditor(); }
+function addExistingFilter(){ const s=document.getElementById('filterLib'); if(s.value){ edit.car.filterIds.push(s.value); renderFilterEditor(); } }
+function addNewFilter(){ const n=val('newFilter'); if(!n)return; const f=ensure(edit.filters,n,val('newFilterLife'),val('newFilterMo')); if(!edit.car.filterIds.includes(f.id))edit.car.filterIds.push(f.id); document.getElementById('newFilter').value=''; document.getElementById('newFilterLife').value=''; document.getElementById('newFilterMo').value=''; renderFilterEditor(); }
+function rmFilter(id){ edit.car.filterIds=edit.car.filterIds.filter(x=>x!==id); renderFilterEditor(); }
+function renderWasherEditor(){
+  document.getElementById('washerChips').innerHTML = edit.car.washerIds.length
+    ? edit.car.washerIds.map(id=>{ const w=objIn(edit.washers,id); return `<span class="chip">${esc(w?w.name:'')}<button type="button" onclick="rmWasher('${id}')">×</button></span>`; }).join('')
+    : '<span class="muted">No crush washer added yet</span>';
+  const avail=edit.washers.filter(w=>!edit.car.washerIds.includes(w.id));
+  document.getElementById('washerLibRow').style.display = avail.length ? 'flex' : 'none';
+  document.getElementById('washerLib').innerHTML='<option value="">— reuse a washer from another car —</option>'+avail.map(w=>`<option value="${w.id}">${esc(w.name)}</option>`).join('');
+}
+function addExistingWasher(){ const s=document.getElementById('washerLib'); if(s.value){ edit.car.washerIds.push(s.value); renderWasherEditor(); } }
+function addNewWasher(){ const n=val('newWasher'); if(!n)return; const w=ensureWasher(edit.washers,n); if(!edit.car.washerIds.includes(w.id))edit.car.washerIds.push(w.id); document.getElementById('newWasher').value=''; renderWasherEditor(); }
+function rmWasher(id){ edit.car.washerIds=edit.car.washerIds.filter(x=>x!==id); renderWasherEditor(); }
+function renderToolEditor(){
+  document.getElementById('toolChips').innerHTML = (edit.car.tools&&edit.car.tools.length)
+    ? edit.car.tools.map((t,i)=>`<span class="chip">${esc(t)}<button type="button" onclick="rmTool(${i})">×</button></span>`).join('')
+    : '<span class="muted">No tools added yet</span>';
+}
+function addNewTool(){ const n=val('newTool'); if(!n)return; edit.car.tools.push(n); document.getElementById('newTool').value=''; renderToolEditor(); }
+function rmTool(i){ edit.car.tools.splice(i,1); renderToolEditor(); }
+function saveCar(e){
+  e.preventDefault();
+  ['year','make','model','nickname','oilCap'].forEach(f=>edit.car[f]=val(f));
+  edit.car.notes=val('carNotes');
+  db.oils=edit.oils; db.filters=edit.filters; db.washers=edit.washers;
+  const i=db.cars.findIndex(c=>c.id===edit.car.id);
+  if(i>=0) db.cars[i]=edit.car; else db.cars.push(edit.car);
+  persist(); render(); closeForm();
+}
+function dupCar(id){
+  const src=db.cars.find(c=>c.id===id); if(!src)return;
+  const c=clone(src); c.id=uid(); c.log=[]; c.nickname=(c.nickname||carTitle(src))+' (copy)';
+  db.cars.push(c); persist(); render(); openForm(c.id);
+}
+function delCar(id){
+  const c=db.cars.find(x=>x.id===id);
+  if(confirm('Delete '+carTitle(c)+'? (Oils and filters in your library are kept.)')){ db.cars=db.cars.filter(x=>x.id!==id); persist(); render(); }
+}
+
+/* ---------- library ---------- */
+function openLib(){ renderLib(); document.getElementById('libOverlay').classList.add('show'); }
+function closeLib(){ document.getElementById('libOverlay').classList.remove('show'); render(); }
+function libList(kind){ return kind==='oil'?db.oils:db.filters; }
+function renderLib(){
+  renderCommonTools();
+  document.getElementById('libOils').innerHTML = db.oils.length ? db.oils.map(o=>libRow('oil',o)).join('') : '<span class="muted">No oils yet.</span>';
+  document.getElementById('libFilters').innerHTML = db.filters.length ? db.filters.map(f=>libRow('filter',f)).join('') : '<span class="muted">No filters yet.</span>';
+}
+function renderCommonTools(){
+  if(!db.commonTools)db.commonTools=[];
+  document.getElementById('commonToolChips').innerHTML = db.commonTools.length
+    ? db.commonTools.map((t,i)=>`<span class="chip drag" draggable="true" title="Drag to reorder"
+        ondragstart="ctDragStart(event,${i})" ondragover="ctDragOver(event)" ondragleave="ctDragLeave(event)"
+        ondrop="ctDrop(event,${i})" ondragend="ctDragEnd(event)"><span class="grip">⠿</span>${esc(t)}<button type="button" draggable="false" title="Remove" onclick="rmCommonTool(${i})">×</button></span>`).join('')
+    : '<span class="muted">No common tools yet</span>';
+}
+/* drag-and-drop reordering of common tools */
+let ctDrag=null;
+function ctDragStart(e,i){ ctDrag=i; e.dataTransfer.effectAllowed='move'; try{ e.dataTransfer.setData('text/plain',String(i)); }catch(err){} e.currentTarget.classList.add('dragging'); }
+function ctDragOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.classList.add('dragover'); }
+function ctDragLeave(e){ e.currentTarget.classList.remove('dragover'); }
+function ctDragEnd(e){ ctDrag=null; renderCommonTools(); }
+function ctDrop(e,i){
+  e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove('dragover');
+  let from=ctDrag; if(from==null){ from=parseInt(e.dataTransfer.getData('text/plain'),10); }
+  if(from==null||isNaN(from)||from===i){ ctDrag=null; renderCommonTools(); return; }
+  const t=db.commonTools.splice(from,1)[0];
+  db.commonTools.splice(i,0,t);
+  ctDrag=null; persist(); renderCommonTools();
+}
+function addCommonTool(){ const n=val('newCommonTool'); if(!n)return; if(!db.commonTools)db.commonTools=[]; db.commonTools.push(n); document.getElementById('newCommonTool').value=''; persist(); renderCommonTools(); }
+function rmCommonTool(i){ db.commonTools.splice(i,1); persist(); renderCommonTools(); }
+function libRow(kind,o){
+  return `<div class="libitem">
+    <input class="nm" value="${esc(o.name)}" onchange="libEdit('${kind}','${o.id}','name',this.value)">
+    <input class="life" value="${esc(o.life||'')}" placeholder="miles" onchange="libEdit('${kind}','${o.id}','life',this.value)">
+    <span class="suffix">mi</span>
+    <input class="life" value="${esc(o.lifeMo||'')}" placeholder="months" onchange="libEdit('${kind}','${o.id}','lifeMo',this.value)">
+    <span class="suffix">mo</span>
+    <button class="danger" type="button" onclick="libDel('${kind}','${o.id}')">Delete</button>
+  </div>`;
+}
+function libEdit(kind,id,field,v){ const x=objIn(libList(kind),id); if(x){ x[field]=v.trim(); persist(); } }
+function libDel(kind,id){
+  if(!confirm('Delete this '+kind+'? It will be removed from any cars that list it.')) return;
+  if(kind==='oil'){ db.oils=db.oils.filter(o=>o.id!==id); db.cars.forEach(c=>c.oilIds=c.oilIds.filter(x=>x!==id)); }
+  else { db.filters=db.filters.filter(o=>o.id!==id); db.cars.forEach(c=>c.filterIds=c.filterIds.filter(x=>x!==id)); }
+  persist(); renderLib();
+}
+function libAddOil(){ const n=val('libNewOil'); if(!n)return; ensure(db.oils,n,val('libNewOilLife'),val('libNewOilMo')); document.getElementById('libNewOil').value=''; document.getElementById('libNewOilLife').value=''; document.getElementById('libNewOilMo').value=''; persist(); renderLib(); }
+function libAddFilter(){ const n=val('libNewFilter'); if(!n)return; ensure(db.filters,n,val('libNewFilterLife'),val('libNewFilterMo')); document.getElementById('libNewFilter').value=''; document.getElementById('libNewFilterLife').value=''; document.getElementById('libNewFilterMo').value=''; persist(); renderLib(); }
+
+/* ---------- inventory ---------- */
+function openInv(){ renderInv(); document.getElementById('invOverlay').classList.add('show'); }
+function closeInv(){ document.getElementById('invOverlay').classList.remove('show'); render(); }
+function renderInv(){
+  document.getElementById('invOils').innerHTML = db.oils.length ? db.oils.map(o=>invRow('oil',o)).join('') : '<span class="muted">No oils in library.</span>';
+  document.getElementById('invFilters').innerHTML = db.filters.length ? db.filters.map(f=>invRow('filter',f)).join('') : '<span class="muted">No filters in library.</span>';
+  document.getElementById('invWashers').innerHTML = db.washers.length ? db.washers.map(invWasherRow).join('') : '<span class="muted">No crush washers yet.</span>';
+}
+function invRow(kind,o){
+  const isOil=kind==='oil';
+  const st=stockState(o.qty, isOil?5:2);
+  return `<div class="invitem">
+    <span class="invnm">${esc(o.name)}</span>
+    <input class="qty" type="number" min="0" step="${isOil?'0.5':'1'}" value="${esc(o.qty||'')}" placeholder="0" onchange="invQty('${kind}','${o.id}',this.value)">
+    <span class="suffix">${isOil?'qt on hand':'on hand'}</span>
+    <span class="tag ${st.cls}">${st.label}</span>
+  </div>`;
+}
+function invWasherRow(w){
+  const st=stockState(w.qty);
+  return `<div class="invitem">
+    <input class="nm" value="${esc(w.name)}" onchange="invWasherEdit('${w.id}','name',this.value)">
+    <input class="qty" type="number" min="0" value="${esc(w.qty||'')}" placeholder="0" onchange="invQty('washer','${w.id}',this.value)">
+    <span class="suffix">on hand</span>
+    <span class="tag ${st.cls}">${st.label}</span>
+    <button class="danger" type="button" onclick="invDelWasher('${w.id}')">Delete</button>
+  </div>`;
+}
+function invListFor(kind){ return kind==='oil'?db.oils:kind==='filter'?db.filters:db.washers; }
+function invQty(kind,id,v){ const x=objIn(invListFor(kind),id); if(x){ x.qty=v.trim(); persist(); renderInv(); } }
+function invWasherEdit(id,field,v){ const w=objIn(db.washers,id); if(w){ w[field]=v.trim(); persist(); } }
+function invAddWasher(){ const n=val('invNewWasher'); if(!n)return; const w=ensureWasher(db.washers,n); const q=val('invNewWasherQty'); if(q)w.qty=q; document.getElementById('invNewWasher').value=''; document.getElementById('invNewWasherQty').value=''; persist(); renderInv(); }
+function invDelWasher(id){ if(!confirm('Delete this crush washer? It will be removed from any cars that list it.'))return; db.washers=db.washers.filter(w=>w.id!==id); db.cars.forEach(c=>{ if(c.washerIds)c.washerIds=c.washerIds.filter(x=>x!==id); }); persist(); renderInv(); }
+
+/* ---------- inventory draw-down ---------- */
+// Only adjusts items that actually have a count recorded; untracked (blank) items are left alone.
+function adjStock(list,id,delta){
+  if(!id||!delta) return;
+  const x=objIn(list,id); if(!x) return;
+  const cur=String(x.qty==null?'':x.qty).trim(); if(cur==='') return;
+  let n=qnum(cur); if(isNaN(n)) return;
+  n=n+delta; if(n<0)n=0;
+  x.qty=String(Math.round(n*100)/100);
+}
+// sign = -1 when logging a change (consume), +1 when deleting one (restore)
+function applyLogStock(en,sign){
+  const q=qnum(en.qts);
+  if(en.oilId && !isNaN(q) && q>0) adjStock(db.oils, en.oilId, sign*q);
+  if(en.filterId) adjStock(db.filters, en.filterId, sign*1);
+  if(en.washerId) adjStock(db.washers, en.washerId, sign*1);
+}
+
+/* ---------- service log ---------- */
+let logCarId=null;
+function openLog(carId){
+  logCarId=carId; const car=db.cars.find(c=>c.id===carId); if(!car)return;
+  document.getElementById('logTitle').textContent='Service Log — '+carTitle(car);
+  buildLogSelect('logOil', car.oilIds, db.oils, 'oil');
+  buildLogSelect('logFilter', car.filterIds, db.filters, 'filter');
+  buildLogSelect('logWasher', car.washerIds||[], db.washers, 'crush washer');
+  document.getElementById('logDate').value=new Date().toISOString().slice(0,10);
+  const cap=qnum(car.oilCap);
+  document.getElementById('logQts').value = isNaN(cap)?'':cap;
+  document.getElementById('logMiles').value=''; document.getElementById('logNotes').value='';
+  renderLogList(car);
+  document.getElementById('logOverlay').classList.add('show');
+}
+function closeLog(){ document.getElementById('logOverlay').classList.remove('show'); logCarId=null; }
+function buildLogSelect(elId, carIds, lib, kind){
+  const sel=document.getElementById(elId);
+  const mine=carIds.map(id=>objIn(lib,id)).filter(Boolean);
+  const others=lib.filter(o=>!carIds.includes(o.id));
+  const opt=o=>{const s=lifeStr(o);return `<option value="${o.id}">${esc(o.name)}${s?' — '+s:''}</option>`;};
+  let html=`<option value="">— select ${kind} used —</option>`+mine.map(opt).join('');
+  if(others.length) html+=`<optgroup label="Other ${kind}s in library">`+others.map(opt).join('')+`</optgroup>`;
+  sel.innerHTML=html;
+}
+function saveLog(e){
+  e.preventDefault();
+  const car=db.cars.find(c=>c.id===logCarId); if(!car)return;
+  const entry={id:uid(),date:val('logDate'),miles:val('logMiles'),oilId:val('logOil'),filterId:val('logFilter'),washerId:val('logWasher'),qts:val('logQts'),notes:val('logNotes')};
+  if(!entry.date && !entry.miles){ alert('Add a date or mileage for this change.'); return; }
+  car.log.push(entry);
+  applyLogStock(entry,-1);
+  persist();
+  document.getElementById('logMiles').value=''; document.getElementById('logNotes').value='';
+  renderLogList(car); render();
+}
+function renderLogList(car){
+  const box=document.getElementById('logList');
+  const entries=(car.log||[]).slice().sort(byRecent);
+  if(!entries.length){ box.innerHTML='<span class="muted">No changes logged yet.</span>'; return; }
+  box.innerHTML=entries.map(en=>{
+    const when=[fmtDate(en.date),num(en.miles)?milesFmt(en.miles)+' mi':''].filter(Boolean).join(' @ ')||'—';
+    const q=qnum(en.qts);
+    const oilTxt=en.oilId?(oilName(en.oilId)+(!isNaN(q)&&q>0?` (${q} qt)`:'')):'';
+    const w=washObj(en.washerId);
+    const used=[oilTxt,filterName(en.filterId),w?w.name:''].filter(Boolean).join(' + ');
+    return `<div class="logitem"><div class="li-main"><span class="li-when">${esc(when)}</span>
+      <span class="muted">${used?esc(used):'no oil/filter recorded'}${en.notes?' · '+esc(en.notes):''}</span></div>
+      <button class="danger" type="button" onclick="delLog('${en.id}')">Delete</button></div>`;
+  }).join('');
+}
+function delLog(entryId){
+  const car=db.cars.find(c=>c.id===logCarId); if(!car)return;
+  const en=car.log.find(l=>l.id===entryId);
+  if(en) applyLogStock(en,+1); // put the oil/filter/washer back on the shelf
+  car.log=car.log.filter(l=>l.id!==entryId); persist(); renderLogList(car); render();
+}
+
+/* ---------- printable quick-change form ---------- */
+function printForm(carId){
+  const c=db.cars.find(x=>x.id===carId); if(!c)return;
+  const oils=c.oilIds.map(id=>oilObj(id)).filter(Boolean);
+  const filters=c.filterIds.map(id=>filObj(id)).filter(Boolean);
+  const last=latestLog(c);
+  const lastTxt=last?[fmtDate(last.date),num(last.miles)?milesFmt(last.miles)+' mi':''].filter(Boolean).join(' @ '):'—';
+  const opt=o=>{ const s=lifeStr(o); return `<div class="opt"><span class="box"></span> ${esc(o.name)}${s?` <span class="mut">(${s})</span>`:''}</div>`; };
+  const oilList=oils.length?oils.map(opt).join(''):'<div class="opt mut">(no oils saved for this car)</div>';
+  const filterList=filters.length?filters.map(opt).join(''):'<div class="opt mut">(no filters saved for this car)</div>';
+  const washers=(c.washerIds||[]).map(id=>washObj(id)).filter(Boolean);
+  const washerList=washers.length?washers.map(opt).join(''):'<div class="opt mut">(no crush washer saved for this car)</div>';
+  const toolLine=t=>`<div class="opt"><span class="box"></span> ${esc(t)}</div>`;
+  const specialty=(c.tools||[]).length?'<h2>Specialty tools — this vehicle</h2>'+(c.tools||[]).map(toolLine).join(''):'';
+  const common=(db.commonTools||[]).length?'<h2>Common tools</h2>'+(db.commonTools||[]).map(toolLine).join(''):'';
+  const remember=c.notes?'<div style="white-space:pre-wrap;margin-top:4px"><b>Remember:</b> '+esc(c.notes)+'</div>':'';
+  const style='body{font-family:Arial,Helvetica,sans-serif;color:#000;margin:24px;line-height:1.7}'
+    +'h1{font-size:21px;margin:0 0 2px}.sub{color:#555;margin:0 0 14px;font-size:13px}'
+    +'.ref{border:1px solid #bbb;border-radius:6px;padding:10px 14px;margin-bottom:18px;font-size:13px;line-height:1.7}'
+    +'.fillrow{display:flex;align-items:flex-end;gap:12px;margin:22px 0;font-size:16px}'
+    +'.fill{flex:1;border-bottom:1px solid #000;height:30px}'
+    +'.linelong{display:block;border-bottom:1px solid #000;height:38px;margin-top:14px}'
+    +'.opt{display:flex;align-items:center;gap:12px;margin:13px 0 13px 14px;font-size:15px}'
+    +'.opt .fill{height:26px}'
+    +'.box{display:inline-block;width:15px;height:15px;border:1px solid #000;flex:0 0 auto}'
+    +'.mut{color:#666}'
+    +'h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#333;border-bottom:1px solid #ddd;padding-bottom:4px;margin:22px 0 8px}'
+    +'@media print{body{margin:12mm}}';
+  const html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Oil Change — '+esc(carTitle(c))+'</title><style>'+style+'</style></head><body>'
+    +'<h1>Oil Change Record</h1>'
+    +'<div class="sub">'+esc(carTitle(c))+(c.nickname&&carTitle(c)!==c.nickname?' · '+esc(c.nickname):'')+'</div>'
+    +'<div class="ref"><div><b>Oil capacity:</b> '+esc(c.oilCap||'—')+'</div><div><b>Last change on file:</b> '+esc(lastTxt)+'</div>'+remember+'</div>'
+    +'<div class="fillrow"><b>Date:</b><span class="fill"></span></div>'
+    +'<div class="fillrow"><b>Current mileage:</b><span class="fill"></span></div>'
+    +'<h2>Oil used (check one)</h2>'+oilList+'<div class="opt"><span class="box"></span> Other: <span class="fill"></span></div>'
+    +'<h2>Filter used (check one)</h2>'+filterList+'<div class="opt"><span class="box"></span> Other: <span class="fill"></span></div>'
+    +'<h2>Crush washer used (check one)</h2>'+washerList+'<div class="opt"><span class="box"></span> Other: <span class="fill"></span></div>'
+    +specialty
+    +common
+    +'<h2>Notes</h2><div class="linelong"></div><div class="linelong"></div><div class="linelong"></div>'
+    +'</body></html>';
+  const w=window.open('','_blank');
+  if(!w){ alert('Please allow pop-ups so the printable form can open in a new tab.'); return; }
+  w.document.write(html); w.document.close(); w.focus();
+  setTimeout(()=>{ try{ w.print(); }catch(e){} }, 300);
+}
+
+/* ---------- export / import ---------- */
+function exportData(){
+  const d=new Date(), p=n=>String(n).padStart(2,'0');
+  const stamp=p(d.getFullYear()%100)+p(d.getMonth()+1)+p(d.getDate());
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='oil-tracker-backup.'+stamp+'.json'; a.click();
+}
+function importData(e){
+  const file=e.target.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ db=normalize(JSON.parse(r.result)); persist(); render(); alert('Imported successfully.'); }catch(err){ alert('Could not read that file.'); } };
+  r.readAsText(file); e.target.value='';
+}
+
+document.getElementById('overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeForm(); });
+document.getElementById('libOverlay').addEventListener('click',e=>{ if(e.target.id==='libOverlay') closeLib(); });
+document.getElementById('invOverlay').addEventListener('click',e=>{ if(e.target.id==='invOverlay') closeInv(); });
+document.getElementById('logOverlay').addEventListener('click',e=>{ if(e.target.id==='logOverlay') closeLog(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeForm(); closeLib(); closeInv(); closeLog(); } });
+render();
+initSupabase();
+</script>
+</body>
+</html>
