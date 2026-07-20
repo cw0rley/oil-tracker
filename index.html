@@ -18,6 +18,8 @@
   header h1{margin:0;font-size:20px;display:flex;align-items:center;gap:10px}
   .logo{width:30px;height:30px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
   .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .menu{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .menubtn{display:none}
   button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);
     color:var(--text);padding:8px 14px;border-radius:8px;transition:.15s}
   button:hover{border-color:var(--accent2)}
@@ -115,13 +117,34 @@
   @media (max-width:560px){form{grid-template-columns:1fr}}
   @media (max-width:600px){
     html,body{overflow-x:hidden;max-width:100%}
-    header{padding:14px 14px}
-    header h1{font-size:18px}
-    main{padding:14px}
+    header{padding:12px 14px;position:relative;flex-wrap:nowrap}
+    header h1{font-size:17px;flex:1;min-width:0}
+    main{padding:12px}
     .grid{grid-template-columns:1fr}
-    .card{padding:14px}
+    .card{padding:14px;gap:10px}
     .modal{padding:18px}
     .addrow .life{flex:1 1 90px;width:auto}
+    .count{display:none}
+    /* collapse the header buttons into a dropdown menu */
+    .menubtn{display:inline-flex;font-size:19px;line-height:1;padding:8px 13px}
+    .menu{display:none;position:absolute;right:12px;top:100%;margin-top:6px;
+      flex-direction:column;align-items:stretch;gap:6px;background:var(--panel);
+      border:1px solid var(--line);border-radius:12px;padding:10px;min-width:215px;
+      box-shadow:0 12px 34px rgba(0,0,0,.55);z-index:60}
+    .menu.show{display:flex}
+    .menu button{width:100%;text-align:left}
+    .hdrstat{display:flex;flex-direction:column;gap:6px;width:100%}
+    .hdrstat button{width:100%;text-align:left}
+    .hdrstat .stat{padding:4px 0}
+    /* stop card rows running off the right edge */
+    .card h2{font-size:16px}
+    .spec{flex-direction:column;align-items:flex-start;gap:2px}
+    .spec .lbl{white-space:normal}
+    .spec .val{text-align:left}
+    .optitem{flex-direction:column;align-items:flex-start;gap:5px}
+    .optitem .lf2{white-space:normal}
+    .optitem span{min-width:0;overflow-wrap:anywhere}
+    .meta .row{gap:4px}
   }
   @media print{ header .actions,.sb,.card-actions{display:none} body{background:#fff;color:#000} .card{break-inside:avoid;border-color:#ccc} .spec{background:#f3f3f3} }
 </style>
@@ -132,12 +155,15 @@
   <div class="actions">
     <span class="count" id="count"></span>
     <button class="primary" onclick="openForm()">+ Add Car</button>
-    <button class="ghost" onclick="openLib()">Oils &amp; Filters</button>
-    <button class="ghost" onclick="openInv()">Inventory</button>
-    <button class="ghost" onclick="exportData()">Export</button>
-    <button class="ghost" onclick="document.getElementById('import').click()">Import</button>
-    <button class="ghost" onclick="window.print()">Print</button>
-    <span id="storagebar" class="hdrstat"></span>
+    <button class="ghost menubtn" id="menubtn" onclick="toggleMenu(event)" aria-label="Menu" title="Menu">☰</button>
+    <div class="menu" id="menu">
+      <button class="ghost" onclick="closeMenu();openLib()">Oils &amp; Filters</button>
+      <button class="ghost" onclick="closeMenu();openInv()">Inventory</button>
+      <button class="ghost" onclick="closeMenu();exportData()">Export</button>
+      <button class="ghost" onclick="closeMenu();document.getElementById('import').click()">Import</button>
+      <button class="ghost" onclick="closeMenu();window.print()">Print</button>
+      <span id="storagebar" class="hdrstat"></span>
+    </div>
     <input type="file" id="import" accept="application/json" style="display:none" onchange="importData(event)">
   </div>
 </header>
@@ -832,7 +858,16 @@ document.getElementById('overlay').addEventListener('click',e=>{ if(e.target.id=
 document.getElementById('libOverlay').addEventListener('click',e=>{ if(e.target.id==='libOverlay') closeLib(); });
 document.getElementById('invOverlay').addEventListener('click',e=>{ if(e.target.id==='invOverlay') closeInv(); });
 document.getElementById('logOverlay').addEventListener('click',e=>{ if(e.target.id==='logOverlay') closeLog(); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeForm(); closeLib(); closeInv(); closeLog(); } });
+/* ---------- mobile header menu ---------- */
+function toggleMenu(e){ if(e) e.stopPropagation(); document.getElementById('menu').classList.toggle('show'); }
+function closeMenu(){ const m=document.getElementById('menu'); if(m) m.classList.remove('show'); }
+document.addEventListener('click',e=>{
+  const m=document.getElementById('menu'), b=document.getElementById('menubtn');
+  if(!m || !m.classList.contains('show')) return;
+  if(m.contains(e.target) || (b && b.contains(e.target))) return;
+  m.classList.remove('show');
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeMenu(); closeForm(); closeLib(); closeInv(); closeLog(); } });
 render();
 initSupabase();
 </script>
