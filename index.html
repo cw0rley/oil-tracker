@@ -344,8 +344,8 @@
 /* =======================================================================
    CONFIG — paste your Supabase values here (see SETUP-web-hosting.md)
    ======================================================================= */
-const SUPABASE_URL      = 'https://rzeluofswaaucqshaahk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6ZWx1b2Zzd2FhdWNxc2hhYWhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MjQwMjYsImV4cCI6MjEwMDEwMDAyNn0.MWGi1qIARSVtOchppStMEGyKV0_Rk-R0H7oYxJ-6k_4';
+const SUPABASE_URL      = 'https://giygidtqxgkvmqtamhwv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpeWdpZHRxeGdrdm1xdGFtaHd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjU5NDUsImV4cCI6MjEwNTE0MTk0NX0.PtvWOlUcjbp9h7TeHOsRho7JRDzYJ8PU-mnnJpWpFHs';
 const LOGIN_EMAIL       = 'pat@claytonrugby.com';         // the single account you create in Supabase
 const ROW_ID            = 1;                              // one shared row holds all your data
 /* ======================================================================= */
@@ -458,7 +458,7 @@ async function doLogin(e){
     if(error) throw error;
     session=data.session; document.getElementById('loginPw').value='';
     showLogin(false); onAuthed();
-  }catch(x){ err.textContent='Wrong password — try again.'; }
+  }catch(x){ err.textContent='Sign-in failed: '+((x&&x.message)||x); console.error(x); }
   finally{ btn.disabled=false; btn.textContent='Sign in'; }
 }
 async function logout(){ try{ if(sb) await sb.auth.signOut(); }catch(e){} session=null; showLogin(true); }
